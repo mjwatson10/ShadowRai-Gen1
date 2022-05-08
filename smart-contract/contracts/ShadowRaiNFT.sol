@@ -7,11 +7,12 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/cryptography/MerkleProof.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
-contract YourNftToken is ERC721A, Ownable, ReentrancyGuard {
+contract ShadowRaiNFT is ERC721A, Ownable, ReentrancyGuard {
 
-  using Strings for uint256;
+    using Strings for uint256;
 
-  bytes32 public merkleRoot;
+  bytes32 public merkleRoot1;
+  bytes32 public merkleRoot2;
   mapping(address => bool) public whitelistClaimed;
 
   string public uriPrefix = '';
@@ -21,6 +22,9 @@ contract YourNftToken is ERC721A, Ownable, ReentrancyGuard {
   uint256 public cost;
   uint256 public maxSupply;
   uint256 public maxMintAmountPerTx;
+  uint256 private pay;
+  uint256 public immutable secondWave;
+  uint256 public immutable openToAll;
 
   bool public paused = true;
   bool public whitelistMintEnabled = false;
@@ -38,6 +42,8 @@ contract YourNftToken is ERC721A, Ownable, ReentrancyGuard {
     maxSupply = _maxSupply;
     setMaxMintAmountPerTx(_maxMintAmountPerTx);
     setHiddenMetadataUri(_hiddenMetadataUri);
+    secondWave = block.timestamp + 2 hours;
+    openToAll = block.timestamp + 5 hours;
   }
 
   modifier mintCompliance(uint256 _mintAmount) {
@@ -52,14 +58,28 @@ contract YourNftToken is ERC721A, Ownable, ReentrancyGuard {
   }
 
   function whitelistMint(uint256 _mintAmount, bytes32[] calldata _merkleProof) public payable mintCompliance(_mintAmount) mintPriceCompliance(_mintAmount) {
-    // Verify whitelist requirements
-    require(whitelistMintEnabled, 'The whitelist sale is not enabled!');
-    require(!whitelistClaimed[_msgSender()], 'Address already claimed!');
-    bytes32 leaf = keccak256(abi.encodePacked(_msgSender()));
-    require(MerkleProof.verify(_merkleProof, merkleRoot, leaf), 'Invalid proof!');
+    //Verify openings
+    if (block.timestamp >= openToAll){
+      _safeMint(_msgSender(), _mintAmount);
+    } else if (block.timestamp >= secondWave){
+      // Verify whitelist requirements
+      require(whitelistMintEnabled, 'The whitelist sale is not enabled!');
+      require(!whitelistClaimed[_msgSender()], 'Address already claimed!');
+      bytes32 leaf = keccak256(abi.encodePacked(_msgSender()));
+      require(MerkleProof.verify(_merkleProof, merkleRoot2, leaf), 'Invalid proof!');
 
-    whitelistClaimed[_msgSender()] = true;
-    _safeMint(_msgSender(), _mintAmount);
+      whitelistClaimed[_msgSender()] = true;
+      _safeMint(_msgSender(), _mintAmount);
+    } else {
+      // Verify whitelist requirements
+      require(whitelistMintEnabled, 'The whitelist sale is not enabled!');
+      require(!whitelistClaimed[_msgSender()], 'Address already claimed!');
+      bytes32 leaf = keccak256(abi.encodePacked(_msgSender()));
+      require(MerkleProof.verify(_merkleProof, merkleRoot1, leaf), 'Invalid proof!');
+
+      whitelistClaimed[_msgSender()] = true;
+      _safeMint(_msgSender(), _mintAmount);
+    } 
   }
 
   function mint(uint256 _mintAmount) public payable mintCompliance(_mintAmount) mintPriceCompliance(_mintAmount) {
@@ -98,6 +118,11 @@ contract YourNftToken is ERC721A, Ownable, ReentrancyGuard {
     }
 
     return ownedTokenIds;
+  }
+
+  function transferToNewOwnership(address newOwner) public onlyOwner{
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        transferOwnership(newOwner);
   }
 
   function _startTokenId() internal view virtual override returns (uint256) {
@@ -145,30 +170,21 @@ contract YourNftToken is ERC721A, Ownable, ReentrancyGuard {
     paused = _state;
   }
 
-  function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
-    merkleRoot = _merkleRoot;
+  function setMerkleRoot(bytes32 _merkleRoot1, bytes32 _merkleRoot2) public onlyOwner {
+    merkleRoot1 = _merkleRoot1;
+    merkleRoot2 = _merkleRoot2;
   }
 
   function setWhitelistMintEnabled(bool _state) public onlyOwner {
     whitelistMintEnabled = _state;
   }
 
-  function withdraw() public onlyOwner nonReentrant {
-    // This will pay HashLips Lab Team 5% of the initial sale.
-    // By leaving the following lines as they are you will contribute to the
-    // development of tools like this and many others.
-    // =============================================================================
-    (bool hs, ) = payable(0x146FB9c3b2C13BA88c6945A759EbFa95127486F4).call{value: address(this).balance * 5 / 100}('');
-    require(hs);
-    // =============================================================================
-
-    // This will transfer the remaining contract balance to the owner.
-    // Do not remove this otherwise you will not be able to withdraw the funds.
-    // =============================================================================
-    (bool os, ) = payable(owner()).call{value: address(this).balance}('');
-    require(os);
-    // =============================================================================
-  }
+   function withdraw() public payable onlyOwner {
+      (bool os, ) = payable(owner()).call{value: address(this).balance}(
+          ""
+      );
+      require(os, "Withdaw Failed");  
+    }
 
   function _baseURI() internal view virtual override returns (string memory) {
     return uriPrefix;
