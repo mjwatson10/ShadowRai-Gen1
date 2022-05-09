@@ -22,7 +22,7 @@ async function main() {
   const rootHash = "0x" + merkleTree.getRoot().toString("hex");
 
   // Build the 2nd Merkle Tree
-  const leafNodes2 = CollectionConfig.whitelistAddresses.map((addr) =>
+  const leafNodes2 = CollectionConfig.whitelistAddresses2.map((addr) =>
     keccak256(addr)
   );
   const merkleTree2 = new MerkleTree(leafNodes2, keccak256, {

@@ -11,7 +11,7 @@ const CollectionConfig: CollectionConfigInterface = {
   // yarn rename-contract NEW_CONTRACT_NAME
   // Please DO NOT change it manually!
   contractName: "ShadowRaiNFT",
-  tokenName: "Shadow Rai",
+  tokenName: "ShadowRai",
   tokenSymbol: "SR",
   hiddenMetadataUri:
     "ipfs://QmV111qru6ijQHv7rkau7hb8TLmrzu9xeoei6CDN3bEB2m/preview.json",
@@ -28,7 +28,7 @@ const CollectionConfig: CollectionConfigInterface = {
     price: 0.063,
     maxMintAmountPerTx: 1,
   },
-  contractAddress: "0xc3895B590b75f92B2578bC29306EE82000D5AAd7",
+  contractAddress: "0xc03C320aEADdf917e83B6d3b2d225Bf6C34F68b9",
   marketplaceIdentifier: "ShadowRai",
   marketplaceConfig: Marketplaces.openSea,
   whitelistAddresses,
